@@ -1,0 +1,50 @@
+---
+title: "Welcome to my Page!"
+---
+
+
+## About Me
+
+Hi there, I'm Deanna! I'm a Master's student at Baruch College in the Marketing Analytics program. This site is a submission hub for my STA 9750 - Software Tools for Data Analysis course.
+
+I have recently graduated from Stony Brook University, earning my Bachelor of Science in Business Management, with specializations in Finance, Marketing, and Operations Management. I hope to expand my analytical knowledge in Professor Weylandt's course!
+
+![A headshot photograph taken after my graduation ceremony in May of 2025 from Stony Brook University. ](headshot.jpg)
+
+
+You can also take a look at my [resume](resume.pdf)!
+
+## Contact Me
+Feel free to contact me at my school email: deanna.bruno@baruchmail.cuny.edu
+
+You can also find me on **[LinkedIn](https://www.linkedin.com/in/deannabruno/)**!
+
+Or reach me by my phone number: 631-552-8948
+
+```{r}
+#| include: false
+1+1
+```
+--------------
+Last Updated: `r format(Sys.time(), "%A %m %d, %Y at %H:%M%p")`
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+if(!require("leaflet")){
+    options(repos=c(CRAN="https://cloud.r-project.org"))
+    install.packages("leaflet")
+    stopifnot(require("leaflet"))
+}
+
+baruch_longitude <- -73.98333
+baruch_latitude  <- +40.75028
+
+leaflet() |>
+  addTiles() |>
+  setView(baruch_longitude, baruch_latitude, zoom=17) |>
+  addPopups(baruch_longitude, baruch_latitude, 
+            "Where I am studying to receive my Master's degree, at <b>Baruch College</b>!")
+```
