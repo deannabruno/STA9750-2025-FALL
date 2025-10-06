@@ -8,7 +8,7 @@ format:
         code-summary: "Click to show code"
         embedded-resources: true
 author: "Deanna Bruno"
-Published: "2025-10-05"
+published: "2025-10-05"
 ---
 
 ![](https://img.br.de/a1dd41fb-836f-4138-990a-1cfeb9e093d2.jpeg?q=85&rect=15%2C49%2C1065%2C599&w=2048)
