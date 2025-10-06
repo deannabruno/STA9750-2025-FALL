@@ -323,7 +323,7 @@ wednesday_total_views
 
 # STRANGER THINGS RETURNS: A Look into the Final Season of Netflix's Hit Show
 
-![](https://www.fangoria.com/wp-content/webp-express/webp-images/doc-root/wp-content/uploads/2025/07/Screenshot-2025-07-15-at-16.48.42.png.webp)
+![](docs/STP.png.webp)
 
 *Written By Deanna Bruno*
 
@@ -373,7 +373,7 @@ top_film_india
 
 # NETFLIX TAKES A TRIP TO INDIA: A Chance of Expanding in the World's Most Populated Country
 
-![](https://www.whats-on-netflix.com/wp-content/uploads/2023/12/netflix-indian-movies-and-series-coming-in-2024-1280x720.jpg.webp)
+![](docs/NPFI.jpg.webp)
 
 *Written By Deanna Bruno*
 
@@ -404,7 +404,7 @@ happy_gilmore_cumulative_weeks
 
 # HAPPY GILMORE SWINGS BACK: A Classic Comedy Opens the Door for Film Revivals on Netflix
 
-![](https://assets-prd.ignimgs.com/2025/06/23/happy-gilmore-two-xlg-1750679818642.jpg)
+![](docs/HG2P.jpg)
 
 *Written By Deanna Bruno*
 
