@@ -2,6 +2,9 @@
 title: "Mini-Project #01: Exploring the Most Popular Programming on Netflix"
 format:
     html:
+        font:
+            text: "Georgia"
+            heading: "Georgia"
         toc: true
         toc-depth: 3
         code-fold: true
