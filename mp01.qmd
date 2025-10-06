@@ -1,0 +1,417 @@
+---
+title: "Mini-Project #01: Exploring the Most Popular Programming on Netflix"
+format:
+    html:
+        toc: true
+        toc-depth: 3
+        code-fold: true
+        code-summary: "Click to show code"
+        embedded-resources: true
+author: "Deanna Bruno"
+Published: "2025-10-05"
+---
+
+![](https://img.br.de/a1dd41fb-836f-4138-990a-1cfeb9e093d2.jpeg?q=85&rect=15%2C49%2C1065%2C599&w=2048)
+
+# Executive Summary
+
+As a part of Netflix's commitment to delivering high-quality and accessible entertainment content, what we may call 'gourmet cheeseburgers', this mini-project aims to analyze Global and Country Top 10 datasets in order to identify recent streaming successes. The analysis focuses on viewership, cumulative weeks in global charts, and country-specific trends. Key insights include:
+
+-   Hindi Films dominating the Indian market.
+-   Marketing dynamics in the United States.
+-   Global viewing trends across languages and formats.
+
+Most importantly, all findings highlight key opportunities for streaming powerhouse Netflix to further capitalize on its content strategies.
+
+# Acquire Data
+
+## Task 1: Data Acquisition
+
+```{r}
+if(!dir.exists(file.path("data", "mp01"))){
+    dir.create(file.path("data", "mp01"), showWarnings=FALSE, recursive=TRUE)
+}
+
+GLOBAL_TOP_10_FILENAME <- file.path("data", "mp01", "global_top10_alltime.csv")
+
+if(!file.exists(GLOBAL_TOP_10_FILENAME)){
+    download.file("https://www.netflix.com/tudum/top10/data/all-weeks-global.tsv", 
+                  destfile=GLOBAL_TOP_10_FILENAME)
+}
+
+COUNTRY_TOP_10_FILENAME <- file.path("data", "mp01", "country_top10_alltime.csv")
+
+if(!file.exists(COUNTRY_TOP_10_FILENAME)){
+    download.file("https://www.netflix.com/tudum/top10/data/all-weeks-countries.tsv", 
+                  destfile=COUNTRY_TOP_10_FILENAME)
+}
+```
+
+# Data Import and Preparation
+
+## Task 2: Data Cleaning
+
+```{r}
+if(!require("tidyverse")) install.packages("tidyverse")
+library(readr)
+library(dplyr)
+
+GLOBAL_TOP_10 <- read_tsv(GLOBAL_TOP_10_FILENAME)
+```
+
+### Examine Global Data Structure
+
+```{r}
+glimpse(GLOBAL_TOP_10)
+```
+
+### Convert "N/A" to Proper N/A Values
+
+```{r}
+GLOBAL_TOP_10 <- GLOBAL_TOP_10 |>
+    mutate(season_title = if_else(season_title == "N/A", NA_character_, season_title))
+```
+
+### Verify for Successful Cleaning
+
+```{r}
+glimpse(GLOBAL_TOP_10)
+```
+
+## Task 3: Data Import
+
+```{r}
+COUNTRY_TOP_10 <- read_tsv(COUNTRY_TOP_10_FILENAME, na = "N/A")
+```
+
+### Verify for Successful Data Import
+
+```{r}
+glimpse(COUNTRY_TOP_10)
+```
+
+# Initial Data Exploration
+
+```{r}
+library(DT)
+GLOBAL_TOP_10 |> 
+    head(n = 20) |>
+    datatable(options = list(searching = FALSE, info = FALSE))
+```
+
+```{r}
+library(stringr)
+format_titles <- function(df){
+    colnames(df) <- str_replace_all(colnames(df), "_", " ") |> str_to_title()
+    df
+}
+
+GLOBAL_TOP_10 |> 
+    format_titles() |>
+    head(n=20) |>
+    datatable(options=list(searching=FALSE, info=FALSE)) |>
+    formatRound(c('Weekly Hours Viewed', 'Weekly Views'))
+```
+
+```{r}
+GLOBAL_TOP_10 |> 
+    select(-season_title) |>
+    format_titles() |>
+    head(n=20) |>
+    datatable(options=list(searching=FALSE, info=FALSE)) |>
+    formatRound(c('Weekly Hours Viewed', 'Weekly Views'))
+```
+
+```{r}
+GLOBAL_TOP_10 |> 
+    mutate(`runtime_(minutes)` = round(60 * runtime)) |>
+    select(-season_title, 
+           -runtime) |>
+    format_titles() |>
+    head(n=20) |>
+    datatable(options=list(searching=FALSE, info=FALSE)) |>
+    formatRound(c('Weekly Hours Viewed', 'Weekly Views'))
+```
+
+## Task 4: Exploratory Questions
+
+### Question 1: How many different countries does Netflix operate in?
+
+```{r}
+number_of_countries <- COUNTRY_TOP_10 |>
+    distinct(country_name) |>
+    nrow()
+
+number_of_countries
+```
+
+*There are 94 different countries that Netflix operates in.*
+
+### Question 2: Which non-English-language film has spent the most cumulative weeks in the global top 10? How many weeks did it spend?
+
+```{r}
+top_non_english_film <- GLOBAL_TOP_10 |>
+    filter(category == "Films (Non-English)") |>
+    group_by(show_title) |>
+    summarize(total_weeks = max(cumulative_weeks_in_top_10), .groups = "drop") |>
+    arrange(desc(total_weeks)) |>
+    slice_head(n = 1)
+
+top_non_english_film
+```
+
+*The non-English-language film that has spent the most cumulative weeks in the global top 10 is "All Quiet on the Western Front" with 23 total weeks.*
+
+### Question 3: What is the longest film to have ever appeared in the Netflix global Top 10? How long is it in minutes?
+
+```{r}
+longest_film <- GLOBAL_TOP_10 |>
+    filter(category == "Films (Non-English)" | category == "Films (English)") |>
+    arrange(desc(runtime)) |>
+    slice_head(n = 1) |>
+    mutate(runtime_minutes = round(60 * runtime)) |>
+    select(show_title, runtime_minutes)
+
+longest_film
+```
+
+*The longest film to have ever appeared in the Netflix global top 10 is Pushpa 2: The Rule (Reloaded Version), with a run-time of 224 minutes.*
+
+### Question 4: For each of the four categories, what program has the most total hours of global viewership?
+
+```{r}
+most_viewed_program <- GLOBAL_TOP_10 |>
+    group_by(category, show_title) |>
+    summarize (total_hours_viewed = sum(weekly_hours_viewed), .groups = "drop") |>
+    group_by(category) |>
+    slice_max(total_hours_viewed, n = 1) |>
+    arrange(category)
+
+most_viewed_program
+```
+
+*The most viewed programs from each of the four categories are: KPop Demon Hunters (English Films) at 559,100,000 hours, Society of the Snow (Non-English Films) at 235,900,000 hours, Stranger Things (English TV) at 2,967,980,000 hours, and Squid Game (Non-English TV) at 5,048,300,000 hours.*
+
+### Question 5: Which TV show had the longest run in a country’s Top 10? How long was this run and in what country did it occur?
+
+```{r}
+longest_country_tv_show_run <- COUNTRY_TOP_10 |>
+    filter(category == "TV") |>
+    group_by(country_name, show_title) |>
+    summarize(total_weeks = max(cumulative_weeks_in_top_10), .groups = "drop") |>
+    arrange(desc(total_weeks)) |>
+    slice_head(n = 1)
+
+longest_country_tv_show_run
+```
+
+*The TV show with the longest run in a country's Top 10 is Money Heist, which ran for 127 weeks in Pakistan.*
+
+### Question 6: Netflix provides over 200 weeks of service history for all but one country in our data set. Which country is this and when did Netflix cease operations in that country?
+
+```{r}
+country_with_least_weeks <- COUNTRY_TOP_10 |>
+    group_by(country_name) |>
+    summarize(weeks = n_distinct(week), last_week = max(week), .groups = "drop") |>
+    arrange(weeks) |>
+    slice_head(n = 1)
+
+country_with_least_weeks
+```
+
+*The only country with less than 200 weeks of service history is Russia, with a total of 35 weeks. Netflix ceased operations in Russia on February 27, 2022.*
+
+### Question 7: What is the total number of hours of viewership of the TV show Squid Game across all three seasons?
+
+```{r}
+squid_game_total_viewership <- GLOBAL_TOP_10 |>
+    filter(str_detect(show_title, "Squid Game")) |>
+    summarize(total_hours = sum(weekly_hours_viewed, na.rm = TRUE))
+
+options(scipen = 999)
+
+squid_game_total_viewership
+```
+
+*The total number of hours of global viewership of the TV show Squid Game across all three seasons is 5,310,000,000 hours.*
+
+### Question 8: The movie Red Notice has a runtime of 1 hour and 58 minutes. Approximately how many views did it receive in 2021?
+
+```{r}
+red_notice_views_2021 <- GLOBAL_TOP_10 |>
+    filter(show_title == "Red Notice") |>
+    filter(year(week) == 2021) |>
+    mutate(runtime_hours = 1 +58/60) |>
+    mutate(estimated_views = weekly_hours_viewed / runtime_hours) |>
+    summarize(total_views = sum(estimated_views, na.rm = TRUE))
+
+red_notice_views_2021
+```
+
+*The movie Red Notice received approximately 201,732,203 views in 2021.*
+
+### Question 9: How many Films reached Number 1 in the US but did not originally debut there? That is, find films that first appeared on the Top 10 chart at, e.g., Number 4 but then became more popular and eventually hit Number 1? What is the most recent film to pull this off?
+
+```{r}
+
+us_films_reaching_number_one <- COUNTRY_TOP_10 |>
+  filter(country_name == "United States", category == "Films") |>
+  group_by(show_title) |>
+  summarize(
+    debut_rank = weekly_rank[which.min(week)],
+    ever_hit_one = min(weekly_rank),
+    debut_date = max(week, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  filter(ever_hit_one == 1, debut_rank > 1) |>
+  arrange(desc(debut_date))
+
+us_films_reaching_number_one
+
+num_films <- nrow(us_films_reaching_number_one)
+num_films
+
+most_recent_film <- us_films_reaching_number_one$show_title[1]
+most_recent_film
+```
+
+*There are 45 films that reached Number 1 in the US but did not originally debut there. The most recent recent film to pull this off is "KPop Demon Hunters".*
+
+### Question 10: Which TV show/season hit the top 10 in the most countries in its debut week? In how many countries did it chart?
+
+```{r}
+tv_show_most_countries_debut_week <- COUNTRY_TOP_10 |>
+    filter(str_detect(category,"TV")) |>
+    group_by(show_title, season_title, country_name) |>
+    summarize(debut_week = min(week), .groups = "drop") |>
+    group_by(show_title, season_title, debut_week) |>
+    summarize(countries = n(), .groups = "drop") |>
+    arrange(desc(countries)) |>
+    slice_head(n = 1)
+tv_show_most_countries_debut_week
+```
+
+*The TV show and season that hit the top 10 in the most countries in its debit week was Emily in Paris (Season 2), which charted 94 countries on December 26, 2021.*
+
+## Task 5: Stranger Things Press Release
+
+```{r}
+stranger_things <- GLOBAL_TOP_10 |>
+    filter(str_detect(show_title, "Stranger Things"))
+    
+stranger_things_total_views <- sum(stranger_things$weekly_hours_viewed, na.rm = TRUE)
+
+
+stranger_things_weeks_in_top_10 <- n_distinct(stranger_things$week)
+
+stranger_things_number_of_countries <- COUNTRY_TOP_10 |>
+    filter(str_detect(show_title, "Stranger Things")) |>
+    distinct(country_name) |>
+    nrow()
+
+stranger_things_total_views
+stranger_things_number_of_countries
+stranger_things_weeks_in_top_10
+
+wednesday_show <- GLOBAL_TOP_10 |>
+    filter(str_detect(show_title, "Wednesday"))
+    
+wednesday_total_views <- sum(wednesday_show$weekly_hours_viewed, na.rm = TRUE)
+
+wednesday_total_views
+```
+
+# STRANGER THINGS RETURNS: A Look into the Final Season of Netflix's Hit Show
+
+![](https://www.fangoria.com/wp-content/webp-express/webp-images/doc-root/wp-content/uploads/2025/07/Screenshot-2025-07-15-at-16.48.42.png.webp)
+
+*Written By Deanna Bruno*
+
+**NEW YORK, NY - SEPTEMBER 2025** Netflix has announced the much anticipated return of its hit series, Stranger Things, with the release of its fifth and final season. Set to release in three separate parts, the first four episodes will be available for streaming November 26 of this year, followed by the next three on December 25, and the finale premiering December 31.
+
+Since its debut in July 15, 2016, it has taken the internet by storm, quickly becoming one of Netflix's most acclaimed television shows. Streaming data shows its position in the top 10 of charts for over 20 weeks and accumulating over 2,967,980,000 hours of views globally. The success has spanned to over 93 countries around the world, and has won numerous awards for its impressive story-telling, nostalgic 80s references, and incredible acting performances from cast members Millie Bobby Brown, Winona Ryder, Finn Wolfhard, and David Harbour. For context, one of the other most popular shows on Netflix that has sweeped the internet by storm named Wednesday only amounted 2,842,150,000 total views - that's 125,830,000 less!
+
+This final season has fans on the edge of their seats more than ever as rumors swirl of the captivating ending to the beloved series- including the return of fan-favorites, unexpected plot-twists, and a conclusion that is said to leave no one in the room with dry eyes, as stated by star Noah Schnapp.
+
+## Task 6: Netflix in India Press Release
+
+```{r}
+hindi_films_in_india <- COUNTRY_TOP_10 |>
+  filter(country_name == "India", str_detect(category, "Films"))
+
+hindi_films_summary <- hindi_films_in_india |>
+  group_by(show_title) |>
+  summarize(
+    total_weeks = max(cumulative_weeks_in_top_10, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  arrange(desc(total_weeks))
+
+top_film_india <- hindi_films_summary |>
+  slice_head(n = 1)
+
+hindi_titles <- hindi_films_in_india |>
+    distinct(show_title) |>
+    pull(show_title)
+
+hindi_global_films <- GLOBAL_TOP_10 |>
+filter(show_title %in% hindi_titles)
+
+total_hours_indian_films <- hindi_global_films |>
+    summarize(total_hours = sum(weekly_hours_viewed, na.rm = TRUE)) |>
+    pull(total_hours)
+
+total_views_indian_films <- hindi_global_films |>
+    summarize(total_views = sum(weekly_views, na.rm = TRUE)) |>
+    pull(total_views)
+
+total_views_indian_films
+total_hours_indian_films
+hindi_films_summary
+top_film_india
+```
+
+# NETFLIX TAKES A TRIP TO INDIA: A Chance of Expanding in the World's Most Populated Country
+
+![](https://www.whats-on-netflix.com/wp-content/uploads/2023/12/netflix-indian-movies-and-series-coming-in-2024-1280x720.jpg.webp)
+
+*Written By Deanna Bruno*
+
+**NEW YORK, NY - SEPTEMBER 2025** Netflix has announced its record breaking success in India, driven by a need for Hindi-language content in the form of films. The Bollywood-style entertainment has dominated charts on Netflix, generating not only over 7,464,700,000 global hours watched, but 27,234,040,000 global views. Netflix has full intentions on expanding its reach further to India's 1.451 billion population.
+
+Leading the movement are popular films such as: RRR (Hindi), Haseen Dillruba, and Sooryavanshi, who have all sat in the Top 10 Films on Netflix for over 20 weeks straight. Now there are individuals who may watch Hindi-language films in the United States or other countries, so these results are based on these limitations. The ones that are released in India have all been celebrated throughout India, with more to come up until the end of 2025.
+
+These films showcase the potential for Netflix to continue strategically investing time, money, and effort in authentic regional films that resonate with Indian audiences.
+
+## Task 7: 3rd Press Release
+
+```{r}
+happy_gilmore_revival <- GLOBAL_TOP_10 |>
+    filter(show_title %in% c("Happy Gilmore", "Happy Gilmore 2")) 
+
+happy_gilmore_hours <- happy_gilmore_revival |>
+    group_by(show_title) |>
+    summarize(total_hours = sum(weekly_hours_viewed, na.rm = TRUE), total_weeks = n_distinct(week), .groups = "drop")
+
+happy_gilmore_cumulative_weeks <- happy_gilmore_revival |>
+    filter(weekly_rank <= 10) |>
+    group_by(show_title) |>
+    summarize(cumulative_weeks_in_top_10 = n(), .groups = "drop")
+
+happy_gilmore_hours
+happy_gilmore_cumulative_weeks
+```
+
+# HAPPY GILMORE SWINGS BACK: A Classic Comedy Opens the Door for Film Revivals on Netflix
+
+![](https://assets-prd.ignimgs.com/2025/06/23/happy-gilmore-two-xlg-1750679818642.jpg)
+
+*Written By Deanna Bruno*
+
+**NEW YORK, NY - SEPTEMBER 2025** The beloved cult classic comedy, Happy Gilmore, has returned nearly 30 years later. Starring Adam Sandler, Happy Gilmore 2 has attracted audiences, old and new. Streaming data shows that the film has accumulated over 223,700,000 hours within the first give weeks of its release, and has remained in the global Top 10 for those five weeks. This highlights the nostalgic appeal the film has, with even more to come in the future.
+
+The original Happy Gilmore release from 1996 had also seen success from the sequel, with over 41,100,000 hours viewed globally, and spending three weeks in the Top 10. The release of Happy Gilmore 2 has shown just how successful reviving classic films can be, and Netflix has the potential to capitalize on this.
+
+Streaming analytics indicate that reviving timeless and iconic humor or characters from the past can open doors to a new generation of viewers, while also appealing to those who grew up with the original. Celebrity cameos, modern twists, and social media buzz had furthered its popularity.
+
+This potential for success raises an intriguing question for future films: which classics should they consider reviving next?
