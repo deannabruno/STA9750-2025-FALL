@@ -18,3 +18,6 @@ data/**
 /.quarto/
 
 **/*.quarto_ipynb
+# Ignore all data files
+data/
+
