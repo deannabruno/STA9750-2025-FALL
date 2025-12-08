@@ -612,3 +612,4 @@ median_boot |>
 ```
 This bootstrap confidence interval for the median CES revision ranges from 4 to 16 thousand jobs and does NOT include zero. This shows that the median revision is statistically greater than zero.
 
+
