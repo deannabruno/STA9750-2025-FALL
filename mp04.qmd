@@ -598,7 +598,7 @@ mean_boot |>
 
 This bootstrap permutation test generates a p-value of 0.987, showing that the result is consistent with what we would expect under the null hypothesis. There is no evidence that the revision statistic differs from any reference value, so we will fail to reject the null. 
 
-**2. Median Revision - Bootstrap test (Wilcoxon analogue)**
+**Median Revision - Bootstrap test (Wilcoxon analogue)**
 
 ```{r}
 median_boot <- ces_joined |>
