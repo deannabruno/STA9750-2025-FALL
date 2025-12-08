@@ -807,8 +807,13 @@ mean of x
 <p>Half True!</p>
 </section>
 </section>
-<section id="extra-credit" class="level2">
-<h2 class="anchored" data-anchor-id="extra-credit">Extra Credit</h2>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>In conclusion, our analysis of CES revisions over the past 45 years provides a perspective on the accuracy and reliability of employment data produced by the BLS. While we find no evidence of systematic bias or incompetence during Dr.&nbsp;Erika McEntarfer’s tenure, we do observe a statistically significant increase in the absolute size of CES revisions since 2020.</p>
+</section>
+<section id="extra-credit" class="level1">
+<h1>Extra Credit</h1>
 <p><strong>Mean revision (Permutation test — analogue of t-test)</strong></p>
 <div class="cell">
 <details class="code-fold">
@@ -833,7 +838,7 @@ mean of x
 <pre><code># A tibble: 1 × 1
   p_value
     &lt;dbl&gt;
-1   0.987</code></pre>
+1   0.972</code></pre>
 </div>
 </div>
 <p>This bootstrap permutation test generates a p-value of 0.987, showing that the result is consistent with what we would expect under the null hypothesis. There is no evidence that the revision statistic differs from any reference value, so we will fail to reject the null.</p>
@@ -860,7 +865,6 @@ mean of x
 <p>This bootstrap confidence interval for the median CES revision ranges from 4 to 16 thousand jobs and does NOT include zero. This shows that the median revision is statistically greater than zero.</p>
 
 
-</section>
 </section>
 
 </main> <!-- /main -->
