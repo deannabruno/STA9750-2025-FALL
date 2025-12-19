@@ -385,6 +385,7 @@ Such patterns could reveal neighborhoods where complaint behavior deviates from 
 Relatedly, future work could explore interaction effects, such as whether the relationship between income and complaints depends jointly on rent burden and housing stock characteristics, instead of treating predictors as additive.
 Finally, incorporating NYC Housing Court eviction filings would help distinguish whether complaint patterns primarily reflect underlying housing instability or differences in engagement with complaint systems, strengthening the interpretation of complaint data as signals of neighborhood housing conditions.
 
+
 # Sources
 
 -   **Wang, L., Qian, C., Kats, P., Kontokosta, C., & Sobolevsky, S. (2017).** *Structure of 311 service requests as a signature of urban location.*[Plos One Journal](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0186314)
