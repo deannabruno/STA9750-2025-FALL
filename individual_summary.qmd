@@ -1,0 +1,628 @@
+---
+title: "individual_summary"
+authors: "Deanna Bruno"
+format: html
+editor: 
+  markdown: 
+    wrap: sentence
+---
+
+# Specific Question #5 - Public Reporting vs. Regulatory Enforcement in NYC Housing: Evidence from NYC311 and Department of Buildings Complaints
+
+## Introduction & Motivation
+
+New York City’s governance of their housing system generates a large amount of data documenting both the lived experiences of residents in poor housing conditions and the responses of city agencies.
+This is widely used by researchers, policymakers, journalists, and advocacy groups when setting apart housing conditions in neighborhoods, identifying inequalities, and evaluating the prompt response of service to the public’s needs.
+
+New York City’s housing system relies on complaint data from multiple reporting services to identify these complications, prioritize inspections, and guide regulatory enforcement behavior.
+Housing complaint data is widely used in research contexts to study housing quality, neighborhood distress, and service equality.
+Though, supporting question #5 remains unanswered: **Do public initiated housing complaints meaningfully translate into regulatory enforcement?** NYC311 is the city’s centralized reporting platform where residents submit housing complaints, reflecting patterns within the public’s behavior.Regulatory agencies such as the New York City Department of Buildings (DOB) represent formal regulatory engagement and are comparatively responsible for inspections, enforcement actions, and compliance with safety construction standards.
+Conducting further analysis of these two systems allows this supporting question to assess whether patterns in public reporting align with patterns in regulatory enforcement.
+If enforcement follows public reporting closely, complaint data should serve as a plausible reason for governmental response.
+If not, complaint systems may capture the distress of each residency who reports rather than flagging it as needing institutional action.
+
+Supporting question #5 addresses this directly through careful examination of the relationship between resident initiated reporting (NYC311) and regulatory enforcement activity (DOB).
+When approaching this question, we cannot assume a direct causal relationship, rather than evaluating whether or not these two systems align in volume, timing, complaint composition, and resolution information.
+Understanding the relationship between both is essential for interpreting the project’s **overarching question** regarding **neighborhood income disparities in housing complaints**
+
+## Overview of All Data Sources Used Within the Project
+
+Although Supporting Question #5 focuses primarily on NYC311 and DOB complaints, it is important and embedded within Breaking Lease- How I Met Your Landlord’s broader project that integrates multiple administrative and socioeconomic datasets.Each dataset used, even if not by me, serves a distinct role in our analysis to solve our overarching question.
+
+### NYC311 Service Requests
+
+The NYC311 dataset shows a long list of resident-initiated reports of housing and quality-of-life issues throughout New York City.
+Each record represents a complaint submitted by an individual resident of a residency, including information on complaint type, timing, borough, and resolution status.
+NYC311 does not require that a reported issue be verified as a violation.
+It rather reflects residents’ perceptions, experiences, and willingness to report problems whenever they please.
+For Supporting Question #5, NYC311 serves as the baseline measure of public reporting behavior.
+It answers the question: what issues are residents reporting, when, and at what volume?
+These data are essential for evaluating whether regulatory enforcement responds to public pressure.
+
+### Department of Buildings (DOB) Complaints
+
+DOB complaint data shows the formal regulatory intake related to building safety, construction activity, zoning compliance, and structural hazards.
+Unlike the NYC311, the DOB complaints typically involve inspections, enforcement actions, and compliance procedures.
+This is beyond resident perception and instead reflects governance and its engagement.
+In supporting question #5, DOB data IS IN FACT used and supports the regulatory response side of the system!
+Comparing DOB complaints to NYC311 complaints allows my analysis to assess whether enforcement activity mirrors public reporting patterns or follows a different logic.
+
+### Housing Preservation and Development (HPD)
+
+HPD data include housing code violations and enforcement related to residential habitability.
+HPD plays a central role in other supporting questions by capturing landlord compliance and unresolved housing conditions.
+Now supporting question #5 intentionally left out data from the HPD, and will thus be excluded from my main analysis.
+This exclusion is methodological!
+HPD complaints often originate from NYC311 referrals and follow a different enforcement pipeline than DOB.
+Including HPD would complicate the interpretation of whether public reporting leads to independent regulatory action.
+
+### American Community Survey (ACS) ACS
+
+provided a 5-year estimate of neighborhood-level socioeconomic characteristics like the median household income, rent burden, and housing stock.
+The data from this system are foundational for the project’s overarching question and for supporting questions that examine income based disparities.
+While ACS data was not central to Supporting Question #5, it did help to expand the broader project context with others, and by understanding how enforcement behaves independently of income.
+
+## Why Supporting Question #5 Focuses on Specified Data Sources
+
+It was important for my group, Breaking Lease- How I Met Your Landlord, that we answered even the tough questions.
+A key choice we had made in this project was to not use or focus heavily on every dataset for the supporting questions.
+It was also important to focus one whether each system aligns to another, which is what supporting question #5 was set into place to deliberately do.
+Rather than socioeconomic stratification or housing outcomes, I had used NYC311 and DOB alone.
+This allowed my analysis to isolate the relationship between public reporting and regulatory enforcement without any confounding effects from income, housing stock, or landlord behavior from other datasets.
+This design choice strengthens causal interpretation at the system level.
+
+## Data Acquisition & Reproducibility
+
+All datasets used in this analysis were acquired respectively from the NYC Open Data API using authenticated requests with the help of the rest of my group in Breaking Lease- How I Met Your Landlord.
+This ensured that the report did not rely on local files that could not be reproduced as needed.
+The NYC Open Data API had record limits per request, so complaint records were downloaded using queries that specified dates and record limits.
+All acquisition steps are embedded directly in the Quarto document, allowing the report to be rendered on any machine with the necessary packages installed- golly!
+This approach aligns with the course emphasis on reproducible research and supports strong performance in the data acquisition and code effectiveness rubric categories.
+
+## Data Cleaning & Preparation for Supporting Question #5
+
+Although we are using data from NYC311 and DOB to accomplish and answer the same question, they differ substantially in the way they are structured, as they have different administrative intentions.
+In order to properly analyze this data then, we must respectively clean and prepare each datasets.
+The following data is how I had done so through my own code:
+
+```{r}
+
+# Step 1 Data Collection
+
+#Download necessary libraries
+
+library(devtools)  
+library(RSocrata)
+library(janitor)
+library(lubridate)
+library(dplyr)
+library(tidycensus)
+library(tidyverse)
+
+
+app_token <- "ExUt22WiPiJvXNo3ZwPuIUDuC"  # The shared NYC Open Data token
+census_api_key("5cd8f72bd473b6e815af190efa42dfdcd3804b99", install = TRUE,
+overwrite = TRUE)
+
+# Step 2: Data Collection 
+
+# HPD Violations (2023)
+url_hpd <- "https://data.cityofnewyork.us/resource/wvxf-dwi5.csv?$limit=100000"
+hpd_raw <- read.socrata(url_hpd, app_token = app_token) |>
+  clean_names()
+
+# 311 Complaints (2023)
+url_311 <- paste0(
+  "https://data.cityofnewyork.us/resource/erm2-nwe9.json?",
+  "$select=unique_key,created_date,closed_date,complaint_type,descriptor,",
+  "incident_address,incident_zip,borough,latitude,longitude",
+  "&$where=created_date >= '2023-01-01T00:00:00' AND created_date < '2024-01-01T00:00:00'",
+  "&$limit=50000"
+)
+nyc311_raw <- read.socrata(url_311, app_token = app_token) |>
+  clean_names()
+
+# DOB Complaints (2023)
+url_dob <- "https://data.cityofnewyork.us/resource/vztk-gaf7.csv?$limit=50000"
+dob_raw <- read.socrata(url_dob, app_token = app_token) |>
+  clean_names()
+
+# ACS Data (2023)
+vars <- c(
+  income        = "B19013_001E",
+  rent_burden   = "B25070_001E",
+  housing_units = "B25002_001E"
+)
+nyc_counties <- c("New York","Kings","Queens","Bronx","Richmond")
+years <- 2013:2023
+
+acs_list <- lapply(years, function(y) {
+  get_acs(
+    geography = "tract",
+    variables = vars,
+    year = y,
+    survey = "acs5",
+    state = "NY",
+    county = nyc_counties,
+    output = "wide"
+  ) |>
+    mutate(year = y)
+})
+
+acs_nyc_tracts <- bind_rows(acs_list)
+
+# Step 3: Cleaning the data
+
+# HPD Cleaning
+hpd_clean <- hpd_raw |>
+  mutate(
+    novissueddate         = ymd(novissueddate),
+    inspectiondate        = ymd(inspectiondate),
+    approveddate          = ymd(approveddate),
+    originalcertifybydate = ymd(originalcertifybydate),
+    originalcorrectbydate = ymd(originalcorrectbydate),
+    newcertifybydate      = ymd(newcertifybydate),
+    newcorrectbydate      = ymd(newcorrectbydate),
+    certifieddate         = ymd(certifieddate),
+    currentstatusdate     = ymd(currentstatusdate),
+    date   = novissueddate,
+    year   = year(date),
+    month  = month(date),
+    dow    = wday(date, label = TRUE),
+    boroid = suppressWarnings(as.integer(boroid)),
+    block  = suppressWarnings(as.integer(block)),
+    lot    = suppressWarnings(as.integer(lot)),
+    bbl    = if_else(!is.na(boroid) & !is.na(block) & !is.na(lot),
+                     sprintf("%01d%05d%04d", boroid, block, lot), NA_character_)
+  ) |>
+  filter(
+    between(date, as.Date("2023-01-01"), as.Date("2023-12-31")),
+    class %in% c("A","B","C"),
+    !is.na(bbl), !is.na(boro)
+  )
+
+# 311 Cleaning
+nyc311_clean <- nyc311_raw |>
+  mutate(
+    created_date = ymd_hms(created_date),
+    closed_date  = suppressWarnings(ymd_hms(closed_date)),
+    date  = as_date(created_date),
+    year  = year(created_date),
+    month = month(created_date),
+    dow   = wday(created_date, label = TRUE)
+  ) |>
+  filter(
+    between(date, as.Date("2023-01-01"), as.Date("2023-12-31")),
+    !is.na(latitude), !is.na(longitude)
+  )
+
+nyc311_clean <- nyc311_clean |>
+  mutate(
+    borough_std = str_to_upper(borough),
+    borough_std = case_when(
+      borough_std %in% c("MANHATTAN", "NEW YORK") ~ "MANHATTAN",
+      borough_std == "BRONX"                      ~ "BRONX",
+      borough_std == "BROOKLYN"                   ~ "BROOKLYN",
+      borough_std == "QUEENS"                     ~ "QUEENS",
+      borough_std %in% c("STATEN ISLAND", "STATEN_ISLAND") ~ "STATEN ISLAND",
+      TRUE ~ NA_character_
+    )
+  )
+
+# DOB Cleaning
+dob_clean <- dob_raw |>
+  mutate(
+    date_entered     = mdy(date_entered),
+    inspection_date  = mdy(inspection_date),
+    disposition_date = mdy(disposition_date),
+    dobrundate       = mdy(dobrundate),
+    date  = date_entered,
+    year  = year(date_entered),
+    month = month(date_entered),
+    dow   = wday(date_entered, label = TRUE),
+    full_address = paste0(house_number, " ", house_street, ", NY ", zip_code)
+  ) |>
+  filter(between(date, as.Date("2023-01-01"), as.Date("2023-12-31")))
+
+dob_clean <- dob_clean |> dplyr::mutate( borough =      dplyr::case_when( 
+  str_detect(community_board, "^MN") ~ "MANHATTAN", str_detect(community_board, "^BX") ~ "BRONX", str_detect(community_board, "^BK") ~ "BROOKLYN", str_detect(community_board, "^QN") ~ "QUEENS", str_detect(community_board, "^SI") ~ "STATEN ISLAND", TRUE ~ NA_character_
+    )
+  )
+
+#DOB Complaint Category Grouping for Graph 6 from DOB Databases
+dob_clean <- dob_clean |>
+  mutate(
+    dob_category_group = case_when(
+      str_detect(complaint_category, "^1") ~ "Permits / Compliance / Conversions",
+      str_detect(complaint_category, "^2") ~ "Structural Safety / Facades",
+      str_detect(complaint_category, "^3") ~ "Inspections / Access / Egress",
+      str_detect(complaint_category, "^4") ~ "Illegal Conversion / Special Programs",
+      str_detect(complaint_category, "^5") ~ "Mechanical / Boilers / Utilities",
+      str_detect(complaint_category, "^6") ~ "Elevators / Tenant Safety",
+      str_detect(complaint_category, "^7") ~ "Zoning / Commercial Use",
+      str_detect(complaint_category, "^8") ~ "Construction Safety",
+      str_detect(complaint_category, "^9") ~ "Other / Interagency",
+      TRUE ~ "Other"
+    )
+  )
+
+# Borough coverage
+table(is.na(nyc311_clean$borough))
+table(is.na(dob_clean$borough))
+
+
+# ACS Cleaning
+acs_clean <- acs_nyc_tracts |>
+  mutate(
+    tract_geoid   = GEOID,
+    median_income = income,
+    rent_burden   = rent_burden,
+    housing_units = housing_units
+  ) |>
+  select(tract_geoid, median_income, rent_burden, housing_units, year)
+
+# Step 4 – 311 → Census Tracts → ACS
+
+library(sf)
+library(tigris)
+
+options(tigris_use_cache = TRUE)
+
+# 1. Load NYC Census Tracts (2020)
+nyc_tracts <- tracts(
+  state  = "NY",
+  county = c("061", "047", "081", "005", "085"),
+  year   = 2020,
+  class  = "sf"
+)
+
+# 2. Convert 311 dataset to sf points (uses latitude & longitude)
+nyc311_sf <- nyc311_clean |>
+  st_as_sf(coords = c("longitude", "latitude"),
+           crs = 4326,
+           remove = FALSE)
+
+# 3. Align CRS
+nyc311_sf  <- st_transform(nyc311_sf,  crs = st_crs(nyc_tracts))
+nyc_tracts <- st_transform(nyc_tracts, crs = st_crs(nyc311_sf))
+
+# 4. Spatial join: 311 → Tracts
+nyc311_tract <- st_join(
+  nyc311_sf,
+  nyc_tracts |>
+    dplyr::select(GEOID),
+  join = st_within,
+  left = TRUE
+)
+
+# 5. Ensure year column is present
+nyc311_tract <- nyc311_tract |>
+  mutate(year = lubridate::year(created_date))
+
+# 6. ACS small table
+acs_clean_small <- acs_clean |>
+  select(tract_geoid, year, median_income, rent_burden, housing_units) |>
+  distinct()
+
+# 7. Join 311 (with GEOID + year) → ACS
+nyc311_final <- nyc311_tract |>
+  left_join(
+    acs_clean_small,
+    by = c("GEOID" = "tract_geoid", "year" = "year")
+  )
+
+# Step 5 – Income Quintiles and nyc311_income
+acs_quintiles <- acs_clean |>
+  group_by(year) |>
+  mutate(income_quintile = ntile(median_income, 5))
+
+acs_quintiles_unique <- acs_quintiles |>
+  distinct(tract_geoid, year, income_quintile)
+
+nyc311_income <- nyc311_final |>
+  dplyr::left_join(
+    acs_quintiles_unique,
+    by = c("GEOID" = "tract_geoid", "year" = "year")
+  ) |>
+dplyr::filter(!is.na(income_quintile)) |>
+dplyr::mutate(
+    income_quintile = factor(
+      income_quintile,
+      levels = 1:5,
+      labels = c("Q1 (Lowest)", "Q2", "Q3", "Q4", "Q5 (Highest)")
+    )
+  )
+
+# Step 6: Analyzing 311 vs DOB Complaints
+
+monthly_compare <- dplyr::bind_rows(
+  dplyr::count(nyc311_clean, month) |>
+    dplyr::mutate(source = "311"),
+  dplyr::count(dob_clean, month) |>
+    dplyr::mutate(source = "DOB")
+)
+
+monthly_compare <- monthly_compare |>
+  dplyr::group_by(source) |>
+  dplyr::mutate(share = n / sum(n))
+
+borough_compare <- dplyr::bind_rows(
+  dplyr::count(nyc311_clean, borough) |>
+    dplyr::mutate(source = "311"),
+  dplyr::count(dob_clean, borough) |>
+    dplyr::mutate(source = "DOB")
+)
+
+monthly_counts <- bind_rows(
+  count(nyc311_clean, month) |> mutate(source = "311"),
+  count(dob_clean, month)    |> mutate(source = "DOB")
+)
+
+monthly_share <- monthly_counts |>
+  group_by(source) |>
+  mutate(share = n / sum(n))
+
+```
+
+
+
+### Cleaning NYC311 Complaints
+
+NYC311 data ended up being filtered to complaints created in the calendar year of 2023 like the rest of my group in Breaking Lease- How I Met Your Landlord.
+This was done to ensure a proper and simple alignment with the vast amount of DOB data.
+Date and time fields were analyzed using the lubridate function, and additional variables like the month and weekday were constructed to support seasonal analysis.
+
+Perhaps we would be able to see if cooler months caused an increase in reports.
+Borough names were then standardized to ensure consistency across datasets.
+
+Complaints missing latitude or longitude datapoints were excluded to maintain comparability with spatial analyses elsewhere in the project from other data sources.
+Resolution time was also accounted for, only for complaints with valid closure dates!
+Implausible values were taken into great consideration though, like negative durations or resolution times exceeding one year.
+They must be excluded when not using arbitrary trimming.
+This approach balances data quality with transparency!
+
+### Cleaning DOB Complaints
+
+DOB complaint data required a much more extensive preparation.
+Things theoretically were not as organized as the 311.
+Date fields were parsed from character format, and complaints were filtered to 2023 entries.
+Since DOB records do not consistently include borough names, borough identifiers were derived from community board codes using pattern matching, though many issues were encountered in this process.
+In order to ensure an easy to understand comparison of complaint content, detailed DOB complaint categories were grouped into broader classes such as structural safety, construction safety, and zoning.
+This aggregation avoided the over interpreting of the administrative codes and overwhelming the process of creating visualizations.
+
+### Combination Strategy
+
+A critical methodological decision in the supporting question #5 was to not to match individual complaints across systems.
+Such matching would be unreliable due to differences in scope, reporting thresholds, and administrative processing.
+Instead, the analysis compared and combined systems in monthly patterns, distributions, and category composition.
+This strategy respects institutional differences while enabling interpretable comparison.
+
+## Analytical Strategy
+
+I had approached supporting question #5 is addressed through four analytical standpoints:
+
+-   **Volume and seasonality:** Do complaint counts rise and fall together over time?
+
+-   **Relative shares:** Does enforcement activity intensify during periods of high reporting?
+
+-   **Lagged association:** Do spikes in 311 complaints precede increases in DOB complaints?
+
+-   **Complaint content:** Are regulators acting on the same types of issues residents report?
+
+Each point of view showcases if both systems truly align together, and together they ended up providing a robust answer to the supporting question.
+
+## Results and Interpretation
+
+### Monthly Volume Comparison
+
+Figure 1 had compared monthly complaint volumes across NYC311 and DOB.
+NYC311 complaints consistently outnumber DOB complaints by a large amount, showing the lower amount of reporting threshold of public reporting.
+Despite this difference in scale, both systems did show similar seasonal patterns, with activity increasing toward the end of the year!
+Those cold winter months…This alignment suggests that enforcement is not temporally random, but it does not imply proportional responsiveness.
+
+
+Here is the code & visualization where I had figured this out:
+
+
+```{r}
+# Graph #1: Monthly volume: 311 vs DOB
+ monthly_compare |>
+  ggplot(aes(x = month, y = n, color = source)) +
+  geom_line(linewidth = 1.2) +
+  geom_point() +
+  scale_color_manual(values = c("grey20", "grey60")) +
+  scale_x_continuous(breaks = 1:12) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    title = "Monthly Complaint Volume: 311 vs DOB (2023)",
+    x = "Month",
+    y = "Number of Complaints",
+    color = "Data Source"
+  ) +
+  theme_minimal() +
+  theme(
+    text = element_text(family = "Times New Roman")
+  )
+```
+
+### Monthly Share Within Each System
+
+Figure 2 presents monthly shares of each system’s annual complaints.
+Normalizing in this way reveals that DOB enforcement has a seasonal structure that mirrors NYC311 reporting, particularly in the final quarter.
+This finding suggests that public reporting influences WHEN enforcement had occurred, even if it did not determine HOW MUCH of the enforcement occurred (which wasn’t a lot in comparison…).
+
+Here is the code & visualization for it:
+
+```{r}
+# Graph #2: Monthly Share: 311 vs DOB
+monthly_compare |>
+  ggplot(aes(x = month, y = share, color = source)) +
+  geom_line(linewidth = 1.2) +
+  geom_point() +
+  scale_color_manual(values = c("grey20", "grey60")) +
+  scale_x_continuous(breaks = 1:12) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Monthly Share of Complaints Within Each System (2023)",
+    x = "Month",
+    y = "Share of Annual Complaints",
+    color = "Data Source"
+  ) +
+  theme_minimal() +
+  theme(
+    text = element_text(family = "Times New Roman")
+  )
+```
+
+
+### Resolution Time Comparison
+
+Figure 3 compares resolution time distributions.
+NYC311 complaints were resolved quickly on average, as service routing and closure practices were on top of things.
+DOB complaints exhibit longer and more variable timelines, consistent with inspections and compliance processes that governmental regulations must follow during these.
+These differences showcase that resolution time is not directly comparable across systems and should not be interpreted as a simple measure of service quality.
+
+The code & visualization:
+
+```{r}
+# Graph #3: Resolution Time Comparison — 311 vs DOB
+
+resolution_311 <- nyc311_clean |>
+  filter(!is.na(closed_date)) |>
+  mutate(
+    resolution_days = as.numeric(difftime(closed_date, created_date, units = "days")),
+    source = "311"
+  ) |>
+  filter(resolution_days >= 0, resolution_days <= 365) |>
+  select(resolution_days, source)
+
+resolution_dob <- dob_clean |>
+  filter(!is.na(disposition_date)) |>
+  mutate(
+    resolution_days = as.numeric(difftime(disposition_date, date_entered, units = "days")),
+    source = "DOB"
+  ) |>
+  filter(resolution_days >= 0, resolution_days <= 365) |>
+  select(resolution_days, source)
+
+resolution_compare <- bind_rows(resolution_311, resolution_dob)
+
+resolution_compare |>
+  ggplot(aes(x = source, y = resolution_days, fill = source)) +
+  geom_boxplot(outlier.alpha = 0.2) +
+  scale_fill_manual(values = c("grey30", "grey70")) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(
+    title = "Complaint Resolution Time: 311 vs DOB (2023)",
+    subtitle = "Distribution of days from complaint initiation to closure",
+    x = "System",
+    y = "Resolution Time (Days)"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none")
+```
+
+
+### Lagged Relationship Between Reporting and Enforcement
+
+Moving on to Figure 4, it examines whether or not 311 complaint spikes precede with DOB enforcement.
+The weak relationship indicates little evidence that public reporting volume systematically drives enforcement activity in the following months thereafter.
+This result suggests that enforcement decisions are constrained by factors beyond complaint volume alone, even if the public is in an outcry.
+
+The code & visualization: 
+
+```{r}
+# Graph #4: Does DOB Activity Follow 311 Reporting?:
+lagged_compare <- monthly_compare |>
+  dplyr::select(month, source, n) |>
+  tidyr::pivot_wider(names_from = source, values_from = n) |>
+  dplyr::arrange(month) |>
+  dplyr::mutate(DOB_lag_1 = dplyr::lag(DOB, 1)) |>
+  dplyr::filter(!is.na(DOB_lag_1))
+
+lagged_compare |>
+  ggplot(aes(x = `311`, y = DOB_lag_1)) +
+  geom_point(size = 3, alpha = 0.7) +
+  geom_smooth(method = "lm", se = TRUE, color = "black") +
+  labs(
+  title = "Do 311 Complaint Spikes Lead to Subsequent DOB Enforcement?",
+    subtitle = "DOB complaints in month t+1 vs 311 complaints in month t",
+    x = "Number of 311 Complaints in a Months",
+    y = "Number of DOB Complaints in the Following Month"
+  ) +
+  theme_minimal() +
+  theme(
+    text = element_text(family = "Times New Roman")
+  )
+```
+
+
+### Complaint Category Comparison
+
+Figure 5 compares the most common complaint categories in each system.
+NYC311 complaints focus on habitability and service issues, while DOB complaints concentrate on structural and construction-related concerns.
+This divergence indicates that enforcement is selective and does not mirror the full range of resident concerns.
+
+The code & visualization: 
+
+```{r}
+# Graph #5: Are Regulators Acting on What Residents Complain About?:
+
+# Top 311 complaint types
+top_311_types <- nyc311_clean |>
+  dplyr::count(complaint_type, sort = TRUE) |>
+  dplyr::slice_head(n = 6) |>
+  dplyr::mutate(source = "311") |>
+  dplyr::rename(category = complaint_type)
+
+# Top DOB complaint categories
+top_dob_types <- dob_clean |>
+  dplyr::count(dob_category_group, sort = TRUE) |>
+  dplyr::slice_head(n = 6) |>
+  dplyr::mutate(source = "DOB") |>
+  dplyr::rename(category = dob_category_group)
+
+# Combine
+complaint_type_compare <- dplyr::bind_rows(top_311_types, top_dob_types)
+
+complaint_type_compare |>
+  ggplot(aes(x = reorder(category, n), y = n, fill = source)) +
+  geom_col(position = "dodge") +
+  scale_fill_manual(values = c("grey30", "grey70")) +
+  coord_flip() +
+  labs(
+    title = "Top Complaint Categories: 311 vs DOB (2023)",
+    x = "Complaint Category",
+    y = "Number of Complaints",
+    fill = "Data Source"
+  ) +
+  theme_minimal()
+  theme(
+    text = element_text(family = "Times New Roman")
+  )
+```
+
+
+## Connection to Solving the Overarching Question!
+
+Supporting question #5 shows a critical need underneath our project’s broader findings from SQ #1-4 and even #6.
+Income-based disparities observed elsewhere couldn’t be interpreted solely as differences in reporting behavior.
+Even when complaints exist, regulatory follow through was not a given!
+It is limited and uneven in following up.
+This finding helps explain why lower-income neighborhoods experience higher unresolved rates and prolonged exposure to housing risk.
+Complaint systems capture visibility!
+On the other hand, enforcement systems reflect capacity and selectivity.
+
+## Limitations
+
+This analysis does not match individual complaints across systems and focuses on a single year of data.
+Enforcement decisions may also be influenced by legal, staffing, or political constraints not observed in administrative records.
+Despite these limitations, the consistency of findings across multiple analytical lenses strongly supports the conclusions.
+
+## Conclusion
+
+Supporting question #5 demonstrates that NYC311 and DOB complaints represent distinct stages of housing governance.
+Public reporting is widespread and responsive to resident concerns, while regulatory enforcement is selective and capacity-constrained.
+For the overarching question, this insight is essential: income shapes not only housing conditions and reporting behavior, but also whether reported problems translate into institutional action.
+Complaint data must therefore be interpreted as indicators of visibility rather than guarantees of enforcement.
